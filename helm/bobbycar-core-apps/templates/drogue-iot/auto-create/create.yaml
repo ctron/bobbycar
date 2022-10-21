@@ -117,11 +117,15 @@ spec:
               done
               echo
 
-              # create Drogue Cloud access token
-              token=$(curl -svL -f -X POST -H "Authorization: Bearer $DROGUE_TOKEN" -H "Accept: application/json" ${DROGUE_CONSOLE_BACKEND}/api/tokens/v1alpha1 | jq -r .token || true)
-              kubectl create secret generic drogue-iot-commands --from-literal=user=service-account-$DROGUE_CLIENT_ID --from-literal=token=${token}
-              echo
-
+              # create Drogue Cloud access token if it doesn't exist
+              kubectl get secret drogue-iot-commands
+              if [ $? -gt 0 ]; then
+                  token=$(curl -svL -f -X POST -H "Authorization: Bearer $DROGUE_TOKEN" -H "Accept: application/json" ${DROGUE_CONSOLE_BACKEND}/api/tokens/v1alpha1 | jq -r .token || true)
+                  kubectl create secret generic drogue-iot-commands --from-literal=user=service-account-$DROGUE_CLIENT_ID --from-literal=token=${token}
+                  echo
+              else
+                  echo "Access token already exists, skipping"
+              fi
           volumeMounts:
             - name: data
               mountPath: "/etc/post-install"
